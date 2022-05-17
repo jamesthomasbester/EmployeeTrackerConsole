@@ -4,27 +4,15 @@ const inquirer = require('inquirer');
 const mysql2 = require('mysql2');
 require('dotenv').config();
 
-// const connection = mysql2.createConnection({
-//     host: 'localhost',
-//     user: 'root',
-//     password: process.env.SQL_PASS,
-//     database: 'employeeTrackerDB'
-// });
-
-
-// const sql_query = (command) => new Promise((resolve, reject) => {
-//     connection.query(command, (err, res, fld)=>{
-//         if(err) return reject(err);
-//         else if(res) return resolve(res);
-//         else return resolve(fld);
-//     })
-// })
-
-const a = []
-
+const connection = mysql2.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: process.env.SQL_PASS,
+    database: 'employeeTrackerDB'
+});
 
 class Department{
-    constructor({id,name,employees,roles = []}){
+    constructor({id,name,employees = [],roles = []}){
         this.id = id;
         this.name = name;
         this.employees = employees;
@@ -33,7 +21,7 @@ class Department{
 }
 
 class Role{
-    constructor({id, title, salary, employees}){
+    constructor({id, title, salary, employees = []}){
         this.id = id;
         this.title = title;
         this.salary = salary;
@@ -51,17 +39,34 @@ class Employee{
     }
 }
 
-// sql_query('select * from roles;').then((result) => console.table(result))
-// sql_query(`INSERT INTO roles (title, salary) values ('john','1000');`).then((result) => console.table(result))
+//SQL
+function updateSQL(){
+    const sql_query = (command) => new Promise((resolve, reject) => {
+        connection.query(command, (err, res, fld)=>{
+            if(err) return reject(err);
+            else if(res) return resolve(res);
+            
+        })
+    })
+    
+    sql_query(`INSERT INTO department (name) values ('${currentDepartment.name}');`)
+    currentDepartment.roles.forEach(element => {
+        sql_query(`INSERT INTO roles (title, salary) values ('${element.title}','${element.salary}');`)
+    }
+    )
+}
+
 
 function createNewDepartment(){
     inquirer.prompt({
         type: 'input',
         name: 'teamName',
-        message: 'What is the team name?'
+        message: 'What is the department name?'
     }).then((answer) => {
+        console.log('Creating department...');
         currentDepartment.name = answer.teamName;
         console.log(currentDepartment);
+        console.log('Creating unique positions...')
         createNewRole();
     })
 }
@@ -71,13 +76,13 @@ function createNewRole(){
     inquirer.prompt({
         type: 'input',
         name: 'title',
-        message: 'what is the role title?'
+        message: 'what is the position title?'
     }).then((answer) =>{
         role.title = answer.title;
         inquirer.prompt({
             type: 'checkbox',
             name: 'salary',
-            message: 'what is the salary range for this role?',
+            message: 'what is the salary range for this position?',
             choices: ['-$24,999','$25,000-$49,999','$50,000-$74,999','$75,000-$99,000','$100,000-$124,999','$125,000-$149,999', '$150,000+']
         }).then((answer) =>{
             role.salary = answer.salary;
@@ -85,12 +90,11 @@ function createNewRole(){
             inquirer.prompt({
                 type: 'list',
                 name: 'loop',
-                message: 'Do you want to create another role?',
+                message: 'Do you want to create another position?',
                 choices: ['yes','no']
             }).then((answer) =>{
                 if(answer.loop == 'yes')  createNewRole();
                 else createNewEmployee()
-
             })
         })
     })
@@ -98,25 +102,38 @@ function createNewRole(){
 
 
 function createNewEmployee(){
-    //var employee = new Employee({})
+    console.log('Creating new employees...')
+    var employee = new Employee({})
     inquirer.prompt({
         type: 'input',
-        name: 'emnaployeename',
+        name: 'employeename',
         message: 'What is the employees name?'
     }).then((answer) =>{
-        console.log(answer.emnaployeename)
-        // employee.first_name = answer.name.split(' ')[0];
-        // employee.last_name = answer.name.split(' ')[1];
+        employee.first_name = answer.employeename.split(' ')[0];
+        employee.last_name = answer.employeename.split(' ')[1];
         inquirer.prompt({
             type: 'list',
             name: 'role',
             message: 'What is the employees position?',
-            choices: [currentDepartment.roles.title] // issue here
-            
+            choices: currentDepartment.roles.map(ele => ele.title) // issue here
         }).then((answer) =>{
-            console.log(answer.role);
+            employee.role = answer.role;
+            console.log(employee)
+            currentDepartment.employees.push(employee);
+            console.log(currentDepartment);
+            //call loop
+            inquirer.prompt({
+                type: 'list',
+                name: 'loop',
+                message: 'Do you want to create another employee?',
+                choices: ['yes','no']
+            }).then((answer) =>{
+                if(answer.loop == 'yes')  createNewEmployee();
+                else updateSQL()
+            })
         })
     })
+    
 }
 
 inquirer.prompt({
