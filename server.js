@@ -4,21 +4,21 @@ const inquirer = require('inquirer');
 const mysql2 = require('mysql2');
 require('dotenv').config();
 
-const connection = mysql2.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: process.env.SQL_PASS,
-    database: 'employeeTrackerDB'
-});
+// const connection = mysql2.createConnection({
+//     host: 'localhost',
+//     user: 'root',
+//     password: process.env.SQL_PASS,
+//     database: 'employeeTrackerDB'
+// });
 
 
-const sql_query = (command) => new Promise((resolve, reject) => {
-    connection.query(command, (err, res, fld)=>{
-        if(err) return reject(err);
-        else if(res) return resolve(res);
-        else return resolve(fld);
-    })
-})
+// const sql_query = (command) => new Promise((resolve, reject) => {
+//     connection.query(command, (err, res, fld)=>{
+//         if(err) return reject(err);
+//         else if(res) return resolve(res);
+//         else return resolve(fld);
+//     })
+// })
 
 const a = []
 
@@ -89,7 +89,8 @@ function createNewRole(){
                 choices: ['yes','no']
             }).then((answer) =>{
                 if(answer.loop == 'yes')  createNewRole();
-                else console.log(currentDepartment)
+                else createNewEmployee()
+
             })
         })
     })
@@ -97,19 +98,23 @@ function createNewRole(){
 
 
 function createNewEmployee(){
-    var employee = new Employee({})
+    //var employee = new Employee({})
     inquirer.prompt({
         type: 'input',
-        name: 'name',
+        name: 'emnaployeename',
         message: 'What is the employees name?'
     }).then((answer) =>{
-        employee.first_name = answer.name.split(' ')[0];
-        employee.last_name = answer.name.split(' ')[1];
+        console.log(answer.emnaployeename)
+        // employee.first_name = answer.name.split(' ')[0];
+        // employee.last_name = answer.name.split(' ')[1];
         inquirer.prompt({
             type: 'list',
             name: 'role',
             message: 'What is the employees position?',
-            choices: [currentDepartment.roles.title]
+            choices: [currentDepartment.roles.title] // issue here
+            
+        }).then((answer) =>{
+            console.log(answer.role);
         })
     })
 }
@@ -119,9 +124,9 @@ inquirer.prompt({
     name: 'initialPrompt',
     message: 'Welcome to Employee Tracker',
     choices: ['Create new team','Edit existing team','View existing team']
-}).then((result) => {
-    console.log(result.initialPrompt);
-    switch (result.initialPrompt){
+}).then((answer) => {
+    console.log(answer.initialPrompt);
+    switch (answer.initialPrompt){
         case 'Create new team':
             console.log('tets')
             createNewDepartment();
@@ -131,6 +136,6 @@ inquirer.prompt({
         case 'View existing team':
             break;
     }
-});
+})
 
 var currentDepartment = new Department({});
