@@ -47,6 +47,7 @@ function updateSQL(){
             else if(res) return resolve(res);
             
         })
+        //test
     })
     
     sql_query(`INSERT INTO department (name) values ('${currentDepartment.name}');`)
