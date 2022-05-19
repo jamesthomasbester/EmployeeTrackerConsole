@@ -3,13 +3,7 @@ const inquirer = require('inquirer');
 const mysql2 = require('mysql2');
 require('dotenv').config();
 
-const connection = mysql2.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: process.env.SQL_PASS,
-    database: 'employeeTrackerDB'
-});
-
+//classes
 class Department{
     constructor({id,name,employees = [],roles = []}){
         this.id = id;
@@ -42,15 +36,21 @@ class Employee{
 }
 
 //SQL
-    const sql_query = (command) => new Promise((resolve, reject) => {
-        connection.query(command, (err, res, fld)=>{
-            if(err) return reject(err);
-            else if(res) return resolve(res);
-            
-        })
+const connection = mysql2.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: process.env.SQL_PASS,
+    database: 'employeeTrackerDB'
+});
+//instead of making a connections each time, i've made a promise that i call from the functions
+const sql_query = (command) => new Promise((resolve, reject) => {
+    connection.query(command, (err, res, fld)=>{
+        if(err) return reject(err);
+        else if(res) return resolve(res);  
     })
+})
 
-
+//adding name to the department
 function createNewDepartment(){
     inquirer.prompt({
         type: 'input',
@@ -67,7 +67,9 @@ function createNewDepartment(){
     })
 }
 
+//adding all the details for each role
 function createNewRole(){
+    //pulling deptments from sql so you can select from all departments
     var depts = []
     sql_query('SELECT name FROM department;')
     .then(response => response.forEach(element => depts.push(element)))
@@ -92,11 +94,10 @@ function createNewRole(){
                 choices: depts
             }).then(async answer => {
                 role.department = answer.dept[0]
-                console.log(answer.dept);
-                console.log(currentDepartment)
                 await sql_query(`INSERT INTO roles (title, salary, department, department_id) VALUES ('${role.title}', '${role.salary}','${role.department}', '${currentDepartment.id}');`)
                 .then(response => role.id = response.insertId);
                 currentDepartment.roles.push(role);
+                //looping back to create second role
                 inquirer.prompt({
                     type: 'list',
                     name: 'loop',
@@ -113,6 +114,7 @@ function createNewRole(){
 
 
 function createNewEmployee(){
+    //pulling departments and roles from sql so you can select from all
     var depts = []
     var roles = []
     sql_query('SELECT name FROM department;')
@@ -135,6 +137,7 @@ function createNewEmployee(){
             choices: roles
         }).then(async (answer) =>{
             employee.role = answer.role;
+            //async as was having issues with undefined data being entered into sql
             await inquirer.prompt({
                 type: 'checkbox',
                 name: 'dept',
@@ -148,7 +151,6 @@ function createNewEmployee(){
             await sql_query(`INSERT INTO employee (first_name, last_name, role_title, department, roles_id) values ('${employee.first_name}','${employee.last_name}', '${employee.role}', '${employee.department}', ${employee.role_id});`)
             .then(response => employee.id = response.insertId)
             currentDepartment.employees.push(employee);
-            console.log(currentDepartment);
             //call loop
             inquirer.prompt({
                 type: 'list',
@@ -164,6 +166,7 @@ function createNewEmployee(){
     
 }
 
+//main function that starts the questions
 function menu(){
     inquirer.prompt({
         type: 'list',
@@ -173,6 +176,7 @@ function menu(){
     }).then(async (answer) => {
         console.log(answer.initialPrompt);
         switch (answer.initialPrompt){
+            //to go through the creation functions
             case 'Add a department':
                 createNewDepartment();
                 break;
@@ -182,6 +186,7 @@ function menu(){
             case 'Add a employee':
                 createNewEmployee()
                 break;
+            //to go through the viewing sections that loop back when done
             case 'View all departments':
                 await sql_query('SELECT * FROM department;')
                 .then(response => console.table(response))
@@ -200,6 +205,7 @@ function menu(){
         }
     })
 }
-
+// calling to start
 menu();
+// creating a global variable od department
 var currentDepartment = new Department({});
