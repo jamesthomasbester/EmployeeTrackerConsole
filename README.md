@@ -19,6 +19,8 @@ MYSQL server is needed to be running to allow persistant saving
 an installation guide is here
 https://dev.mysql.com/doc/mysql-installation-excerpt/5.7/en/
 
+dotenv is used for creds, you can either manually add sql username and password or use .env file with SQL_PASS variable your password.
+
 ## Run Locally
 
 Clone the project
